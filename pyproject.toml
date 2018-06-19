@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "chomchom"
+version = "0.1.0"
+description = ""
+authors = ["Cauê Baasch de Souza <cauebs@pm.me>"]
+
+[tool.poetry.dependencies]
+python = "*"
+pyqt5 = "^5.10"
+
+[tool.poetry.dev-dependencies]
+pytest = "^3.0"
+flake8 = "^3.5"
+autopep8 = "^1.3"
+jedi = "^0.12.0"
+mypy = "^0.610.0"
