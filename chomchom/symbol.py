@@ -35,27 +35,27 @@ class Symbol:
 
         return self.value == other.value
 
-    @staticmethod
-    def from_string(string: str) -> 'Symbol':
+
+class NonTerminal(Symbol):
+    REGEX = re.compile(r'^([A-Z]\d*)$')
+
+
+class Terminal(Symbol):
+    REGEX = re.compile(r'^([^A-Z&$\s]+)$')
+
+
+class Epsilon(Symbol):
+    REGEX = re.compile(r'^&$')
+
+
+def symbol_from_string(string: str) -> Symbol:
         try:
-            return NonTerminalSymbol(string)
+            return NonTerminal(string)
         except ParseError:
             try:
-                return TerminalSymbol(string)
+                return Terminal(string)
             except ParseError:
                 try:
                     return Epsilon(string)
                 except ParseError:
                     raise ParseError(f"Invalid symbol {string}")
-
-
-class NonTerminalSymbol(Symbol):
-    REGEX = re.compile(r'^([A-Z]\d*)$')
-
-
-class TerminalSymbol(Symbol):
-    REGEX = re.compile(r'^([^A-Z&$]+)$')
-
-
-class Epsilon(Symbol):
-    REGEX = re.compile(r'^&$')
