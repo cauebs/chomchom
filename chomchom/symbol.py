@@ -48,14 +48,18 @@ class Epsilon(Symbol):
     REGEX = re.compile(r'^&$')
 
 
+class EoS(Symbol):
+    REGEX = re.compile(r'^\$$')
+
+
 def symbol_from_string(string: str) -> Symbol:
+    try:
+        return NonTerminal(string)
+    except ParseError:
         try:
-            return NonTerminal(string)
+            return Terminal(string)
         except ParseError:
             try:
-                return Terminal(string)
+                return Epsilon(string)
             except ParseError:
-                try:
-                    return Epsilon(string)
-                except ParseError:
-                    raise ParseError(f"Invalid symbol {string}")
+                raise ParseError(f"Invalid symbol {string}")
