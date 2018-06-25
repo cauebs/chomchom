@@ -1,7 +1,8 @@
 from typing import List, NamedTuple, Set, DefaultDict, Union
 from typing import Iterable, Optional
 
-from .symbol import Symbol, Terminal, Epsilon, NonTerminal, EoS, symbol_from_string
+from .symbol import Symbol, Terminal, Epsilon, NonTerminal, EoS
+from .symbol import symbol_from_string, ParseError
 
 
 class ProductionRule(NamedTuple):
@@ -31,6 +32,7 @@ class ContextFreeGrammar:
         production_rules: List[ProductionRule] = []
 
         for i, line in enumerate(string.strip().splitlines()):
+            try:
             lhs, line_rhs = line.split('->')
 
             nt = NonTerminal(lhs.strip())
@@ -43,6 +45,12 @@ class ContextFreeGrammar:
 
                 for symbol in prod_rhs.strip().split():
                     production.rhs.append(symbol_from_string(symbol))
+
+                if not production.rhs:
+                    raise ParseError(
+                        'Expected a sequence of symbols next to the `|`'
+                        f'on line {i+1}'
+                    )
 
                 production_rules.append(production)
 
