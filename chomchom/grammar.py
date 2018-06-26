@@ -116,6 +116,28 @@ class ContextFreeGrammar:
 
         return current_grammar.is_factored()
 
+    def remove_unreachable(self):
+        # Reachable symbols
+        reachable = {self.start_symbol}
+
+        while True:
+            new_reachable = reachable.copy()
+
+            for nt, rhs in self.production_rules.items():
+                if nt in new_reachable:
+                    for prod in rhs:
+                        for symbol in prod:
+                            new_reachable.add(symbol)
+
+            if reachable == new_reachable:
+                break
+            reachable = new_reachable
+
+        new_productions = [ProductionRule(
+            lhs, rhs) for lhs, rhs in self.production_rules.items() if lhs in reachable]
+
+        return ContextFreeGrammar(new_productions, self.start_symbol)
+
     def fertile(self):
         fertile = set()
         while True:
@@ -131,6 +153,9 @@ class ContextFreeGrammar:
             fertile = new_fertile
 
         return new_fertile
+
+    def is_empty(self):
+        return self.start_symbol not in self.fertile()
 
     def first_of_string(self, string):
         first = set()
