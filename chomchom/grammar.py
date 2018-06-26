@@ -1,12 +1,11 @@
-from typing import List, NamedTuple, Set, DefaultDict, Union
-from typing import Iterable, Optional
+from typing import List, NamedTuple, Set, DefaultDict, Iterable
 
 from itertools import combinations
 
-from .symbol import Symbol, Terminal, Epsilon, NonTerminal, EoS, symbol_from_string
-from .symbol import symbol_from_string, ParseError
-
 from copy import deepcopy
+
+from .symbol import Symbol, Terminal, Epsilon, NonTerminal, EoS
+from .symbol import symbol_from_string, ParseError
 
 
 class ProductionRule(NamedTuple):
@@ -43,7 +42,7 @@ class ContextFreeGrammar:
             try:
                 lhs, line_rhs = line.split('->')
             except ValueError:
-                raise ParseError("Expected '->' after left-hand side")
+                raise ParseError(f'Expected a `->` on line {i+1}')
 
             nt = NonTerminal(lhs.strip())
 
