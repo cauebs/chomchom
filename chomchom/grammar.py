@@ -1,7 +1,11 @@
 from typing import List, NamedTuple, Set, DefaultDict, Union
 from typing import Iterable, Optional
 
+from itertools import combinations
+
 from .symbol import Symbol, Terminal, Epsilon, NonTerminal, EoS, symbol_from_string
+
+from copy import deepcopy
 
 
 class ProductionRule(NamedTuple):
@@ -25,6 +29,10 @@ class ContextFreeGrammar:
 
         self.first = DefaultDict[Symbol, Set[Symbol]](set)
         self.follow = DefaultDict[Symbol, Set[Symbol]](set)
+        self.calculate_follow()
+
+    def copy(self) -> 'ContextFreeGrammar':
+        return deepcopy(self)
 
     @classmethod
     def from_string(cls, string: str) -> 'ContextFreeGrammar':
@@ -51,6 +59,42 @@ class ContextFreeGrammar:
     @property
     def non_terminals(self):
         return self.production_rules.keys()
+
+    def list_nonfactoreds(self):
+        for nt, prods in self.production_rules.items():
+            for a, b in combinations(prods, 2):
+                if self.first_of_string(a) & self.first_of_string(b):
+                    yield (nt, a, b)
+
+    def is_factored(self):
+        if any(self.list_nonfactoreds()):
+            return False
+        return True
+
+    def next_nonterminal_name(self, nonterminal):
+        if nonterminal not in self.non_terminals:
+            return nonterminal
+
+        base = str(nonterminal)
+
+        n = 1
+        while NonTerminal(base + f'{n}') in self.non_terminals:
+            n += 1
+
+        return NonTerminal(base + f'{n}')
+
+    def factor(self, n):
+        i = 0
+        current_grammar = self
+        while i < n:
+            if current_grammar.is_factored():
+                return True
+            i += 1
+
+            # TODO
+            # current_grammar = new_grammar
+
+        return current_grammar.is_factored()
 
     def first_of_string(self, string):
         first = set()
