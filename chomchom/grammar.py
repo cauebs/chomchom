@@ -150,6 +150,24 @@ class ContextFreeGrammar:
 
         return ContextFreeGrammar(new_productions, self.start_symbol)
 
+    def remove_useless(self):
+        return self.remove_infertile().remove_unreachable()
+
+    def remove_infertile(self):
+        if self.is_empty():
+            s = NonTerminal('S')
+            return ContextFreeGrammar(ProductionRule(s, [s]), s)
+
+        fertile = self.fertile()
+
+        new_productions = []
+        for lhs, rhs in self.production_rules.items():
+            for prod in rhs:
+                if set(prod).issubset(fertile | self.terminals | {Epsilon('&')}):
+                    new_productions.append(ProductionRule(lhs, prod))
+
+        return ContextFreeGrammar(new_productions, self.start_symbol)
+
     def fertile(self):
         fertile = set()
         while True:
