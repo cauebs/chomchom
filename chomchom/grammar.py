@@ -4,6 +4,7 @@ from typing import Iterable, Optional
 from itertools import combinations
 
 from .symbol import Symbol, Terminal, Epsilon, NonTerminal, EoS, symbol_from_string
+from .symbol import symbol_from_string, ParseError
 
 from copy import deepcopy
 
@@ -39,7 +40,10 @@ class ContextFreeGrammar:
         production_rules: List[ProductionRule] = []
 
         for i, line in enumerate(string.strip().splitlines()):
-            lhs, line_rhs = line.split('->')
+            try:
+                lhs, line_rhs = line.split('->')
+            except ValueError:
+                raise ParseError("Expected '->' after left-hand side")
 
             nt = NonTerminal(lhs.strip())
 
@@ -51,6 +55,12 @@ class ContextFreeGrammar:
 
                 for symbol in prod_rhs.strip().split():
                     production.rhs.append(symbol_from_string(symbol))
+
+                if not production.rhs:
+                    raise ParseError(
+                        'Expected a sequence of symbols next to the `|`'
+                        f'on line {i+1}'
+                    )
 
                 production_rules.append(production)
 
