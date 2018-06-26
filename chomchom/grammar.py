@@ -65,6 +65,18 @@ class ContextFreeGrammar:
 
         return cls(production_rules, start_symbol)
 
+    def __str__(self):
+        return '\n'.join(
+            f'{nt} -> ' + ' | '.join(
+                ' '.join(
+                    str(symbol)
+                    for symbol in prod
+                )
+                for prod in productions
+            )
+            for nt, productions in self.production_rules.items()
+        )
+
     @property
     def terminals(self):
         terminals = set()
