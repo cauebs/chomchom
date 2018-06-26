@@ -62,4 +62,7 @@ def symbol_from_string(string: str) -> Symbol:
             try:
                 return Epsilon(string)
             except ParseError:
-                raise ParseError(f"Invalid symbol {string}")
+                try:
+                    return EoS(string)
+                except ParseError:
+                    raise ParseError(f"Invalid symbol {string}")
