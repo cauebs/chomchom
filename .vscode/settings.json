@@ -1,10 +1,9 @@
 {
     "python.linting.mypyEnabled": true,
     "python.pythonPath": "${workspaceFolder}/.venv/bin/python",
-    "python.unitTest.pyTestArgs": [
-        "tests"
-    ],
+    "python.unitTest.pyTestArgs": ["--verbose"],
     "python.unitTest.unittestEnabled": false,
     "python.unitTest.nosetestsEnabled": false,
     "python.unitTest.pyTestEnabled": true,
+    "python.unitTest.pyTestPath": "tests"
 }
