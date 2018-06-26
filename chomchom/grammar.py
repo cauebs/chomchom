@@ -57,6 +57,17 @@ class ContextFreeGrammar:
         return cls(production_rules, start_symbol)
 
     @property
+    def terminals(self):
+        terminals = set()
+        for rhs in self.production_rules.values():
+            for prod in rhs:
+                for symbol in prod:
+                    if isinstance(symbol, Terminal):
+                        terminals.add(symbol)
+
+        return terminals
+
+    @property
     def non_terminals(self):
         return self.production_rules.keys()
 
@@ -95,6 +106,22 @@ class ContextFreeGrammar:
             # current_grammar = new_grammar
 
         return current_grammar.is_factored()
+
+    def fertile(self):
+        fertile = set()
+        while True:
+            new_fertile = fertile.copy()
+
+            for nt, rhs in self.production_rules.items():
+                for prod in rhs:
+                    if set(prod).issubset(self.terminals | {Epsilon('&')} | fertile):
+                        new_fertile.add(nt)
+
+            if fertile == new_fertile:
+                break
+            fertile = new_fertile
+
+        return new_fertile
 
     def first_of_string(self, string):
         first = set()
