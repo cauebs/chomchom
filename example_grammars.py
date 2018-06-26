@@ -46,3 +46,26 @@ g6 = ContextFreeGrammar.from_string('''
         F -> b F d | a C | A b | G A
         G -> B c | B C a
      ''')
+
+# Has epsilon productions
+g7 = ContextFreeGrammar.from_string('''
+        S -> A B
+        A -> a A | &
+        B -> b B | &
+     ''')
+
+# Has epsilon productions
+g8 = ContextFreeGrammar.from_string('''
+        S -> c S c | B A
+        A -> a A | A B C | &
+        B -> b B | C A | &
+        C -> c C c | A S
+     ''')
+
+# Has epsilon productions
+g9 = ContextFreeGrammar.from_string('''
+        S -> A z A
+        A -> a | &
+     ''')
+
+print(g8.to_epsilon_free())

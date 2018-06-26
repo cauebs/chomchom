@@ -1,11 +1,15 @@
-from typing import List, NamedTuple, Set, DefaultDict, Iterable
+from typing import List, NamedTuple, Set, DefaultDict, Iterable, KeysView
 
 from itertools import combinations
 
 from copy import deepcopy
 
+from .utils import powerset
+
 from .symbol import Symbol, Terminal, Epsilon, NonTerminal, EoS
 from .symbol import symbol_from_string, ParseError
+
+EPSILON = Epsilon('&')
 
 
 class ProductionRule(NamedTuple):
@@ -89,7 +93,7 @@ class ContextFreeGrammar:
         return terminals
 
     @property
-    def non_terminals(self):
+    def non_terminals(self) -> KeysView['NonTerminal']:
         return self.production_rules.keys()
 
     def list_nonfactoreds(self):
@@ -128,9 +132,58 @@ class ContextFreeGrammar:
 
         return current_grammar.is_factored()
 
-    def remove_unreachable(self):
+    def to_epsilon_free(self) -> 'ContextFreeGrammar':
+        ne: Set['NonTerminal'] = {nt for nt in self.non_terminals if [
+            EPSILON] in self.production_rules[nt]}
+
+        while True:
+            new_ne = ne.copy()
+
+            for lhs, rhs in self.production_rules.items():
+                for prod in rhs:
+                    if set(prod).issubset(new_ne):
+                        new_ne.add(lhs)
+
+            if ne == new_ne:
+                break
+            ne = new_ne
+
+        new_productions: List['ProductionRule'] = [ProductionRule(lhs, rhs)
+                                                   for lhs, prods in self.production_rules.items()
+                                                   for rhs in prods
+                                                   if rhs != [EPSILON]]
+
+        for lhs, prods in self.production_rules.items():
+            for rhs in prods:
+                if set(rhs).intersection(set(ne)) != set():
+                    idxs = [i
+                            for i, x in enumerate(rhs)
+                            if x in ne]
+                    print(f'idxs={idxs}')
+                    for subset in powerset(idxs):
+                        if not subset:
+                            continue
+                        print(subset)
+                        new_rhs = [s
+                                   for i, s in enumerate(rhs)
+                                   if i not in subset]
+                        if not new_rhs:
+                            continue
+                        new_productions.append(ProductionRule(lhs, new_rhs))
+
+        if self.start_symbol in ne:
+            new_start = self.next_nonterminal_name(self.start_symbol)
+            prods = [[self.start_symbol], [EPSILON]]
+            new_productions += [ProductionRule(new_start, rhs)
+                                for rhs in prods]
+
+            return ContextFreeGrammar(new_productions, new_start)
+
+        return ContextFreeGrammar(new_productions, self.start_symbol)
+
+    def remove_unreachable(self) -> 'ContextFreeGrammar':
         # Reachable symbols
-        reachable = {self.start_symbol}
+        reachable: Set['Symbol'] = {self.start_symbol}
 
         while True:
             new_reachable = reachable.copy()
@@ -146,36 +199,36 @@ class ContextFreeGrammar:
             reachable = new_reachable
 
         new_productions = [ProductionRule(
-            lhs, rhs) for lhs, rhs in self.production_rules.items() if lhs in reachable]
+            lhs, *rhs) for lhs, rhs in self.production_rules.items() if lhs in reachable]
 
         return ContextFreeGrammar(new_productions, self.start_symbol)
 
-    def remove_useless(self):
+    def remove_useless(self) -> 'ContextFreeGrammar':
         return self.remove_infertile().remove_unreachable()
 
-    def remove_infertile(self):
+    def remove_infertile(self) -> 'ContextFreeGrammar':
         if self.is_empty():
             s = NonTerminal('S')
-            return ContextFreeGrammar(ProductionRule(s, [s]), s)
+            return ContextFreeGrammar([ProductionRule(s, [s])], s)
 
         fertile = self.fertile()
 
         new_productions = []
         for lhs, rhs in self.production_rules.items():
             for prod in rhs:
-                if set(prod).issubset(fertile | self.terminals | {Epsilon('&')}):
+                if set(prod).issubset(fertile | self.terminals | {EPSILON}):
                     new_productions.append(ProductionRule(lhs, prod))
 
         return ContextFreeGrammar(new_productions, self.start_symbol)
 
-    def fertile(self):
-        fertile = set()
+    def fertile(self) -> Set['NonTerminal']:
+        fertile: Set['NonTerminal'] = set()
         while True:
             new_fertile = fertile.copy()
 
             for nt, rhs in self.production_rules.items():
                 for prod in rhs:
-                    if set(prod).issubset(self.terminals | {Epsilon('&')} | fertile):
+                    if set(prod).issubset(self.terminals | {EPSILON} | fertile):
                         new_fertile.add(nt)
 
             if fertile == new_fertile:
@@ -192,14 +245,14 @@ class ContextFreeGrammar:
 
         for i, symbol in enumerate(string):
             if isinstance(symbol, NonTerminal):
-                first = first.union(self.first[symbol] - set([Epsilon('&')]))
-                if Epsilon('&') not in self.first[symbol]:
+                first = first.union(self.first[symbol] - set([EPSILON]))
+                if EPSILON not in self.first[symbol]:
                     break
             elif isinstance(symbol, Terminal):
                 first.add(symbol)
                 break
         else:
-            first.add(Epsilon('&'))
+            first.add(EPSILON)
 
         return first
 
@@ -220,9 +273,9 @@ class ContextFreeGrammar:
                 for production in self.production_rules[nt]:
                     for symbol in production:
                         if isinstance(symbol, NonTerminal):
-                            if Epsilon('&') in new_first[symbol]:
+                            if EPSILON in new_first[symbol]:
                                 new_first[nt] = new_first[nt].union(
-                                    new_first[symbol] - set([Epsilon('&')]))
+                                    new_first[symbol] - set([EPSILON]))
                             else:
                                 new_first[nt] = new_first[nt].union(
                                     new_first[symbol])
@@ -231,7 +284,7 @@ class ContextFreeGrammar:
                             new_first[nt].add(symbol)
                             break
                     else:
-                        new_first[nt].add(Epsilon('&'))
+                        new_first[nt].add(EPSILON)
 
             if new_first == first:
                 break
@@ -270,11 +323,11 @@ class ContextFreeGrammar:
                         #   FOLLOW(A) = FOLLOW(A) U FIRST(y) - {&}
                         if (isinstance(symbol, NonTerminal) and isinstance(next_symbol, NonTerminal)):
                             new_follow[symbol] = new_follow[symbol].union(
-                                self.first_of_string(production[i+1:]) - set([Epsilon('&')]))
+                                self.first_of_string(production[i+1:]) - set([EPSILON]))
 
                             # if B -> xAy is a production and & in FIRST(y)
                             #   FOLLOW(A) = FOLLOW(A) U FOLLOW(B)
-                            if Epsilon('&') in self.first_of_string(production[i+1:]):
+                            if EPSILON in self.first_of_string(production[i+1:]):
                                 new_follow[symbol] = new_follow[symbol].union(
                                     new_follow[nt])
 
