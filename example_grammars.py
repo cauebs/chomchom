@@ -1,5 +1,5 @@
 from pprint import pprint
-from chomchom import ContextFreeGrammar, NonTerminal, Terminal, Epsilon
+from chomchom import ContextFreeGrammar
 
 g1 = ContextFreeGrammar.from_string('''
         S  -> a S1 | d S
@@ -68,4 +68,15 @@ g9 = ContextFreeGrammar.from_string('''
         A -> a | &
      ''')
 
-print(g8.to_epsilon_free())
+g10 = ContextFreeGrammar.from_string('''
+        S -> A b | A B c
+        B -> b B | A d | &
+        A -> a A | &
+     ''')
+
+g11 = ContextFreeGrammar.from_string('''
+        S -> A B C
+        A -> a A | &
+        B -> b B | A C d
+        C -> c C | &
+      ''')

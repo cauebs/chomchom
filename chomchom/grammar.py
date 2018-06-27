@@ -32,6 +32,7 @@ class ContextFreeGrammar:
         self.start_symbol = start_symbol
 
         self.first = DefaultDict[Symbol, Set[Symbol]](set)
+        self.first_nt = DefaultDict[Symbol, Set[Symbol]](set)
         self.follow = DefaultDict[Symbol, Set[Symbol]](set)
         self.calculate_follow()
 
@@ -198,8 +199,9 @@ class ContextFreeGrammar:
                 break
             reachable = new_reachable
 
-        new_productions = [ProductionRule(
-            lhs, *rhs) for lhs, rhs in self.production_rules.items() if lhs in reachable]
+        new_productions = [ProductionRule(lhs, *rhs)
+                           for lhs, rhs in self.production_rules.items()
+                           if lhs in reachable]
 
         return ContextFreeGrammar(new_productions, self.start_symbol)
 
@@ -256,6 +258,44 @@ class ContextFreeGrammar:
 
         return first
 
+    def calculate_first_nt(self):
+        self.first_nt.clear()
+        first_nt = {nt: set() for nt in self.non_terminals}
+
+        for nt in self.non_terminals:
+            for production in self.production_rules[nt]:
+                first_symbol = production[0]
+                if (isinstance(first_symbol, NonTerminal) or
+                        isinstance(first_symbol, Epsilon)):
+                    first_nt[nt].add(first_symbol)
+
+        while True:
+            new_first = first_nt.copy()
+
+            for nt in self.non_terminals:
+                for production in self.production_rules[nt]:
+                    for symbol in production:
+                        if isinstance(symbol, NonTerminal):
+                            if EPSILON in new_first[symbol]:
+                                new_first[nt] = new_first[nt].union(
+                                    new_first[symbol] -
+                                    {EPSILON} |
+                                    {symbol})
+                            else:
+                                new_first[nt] = new_first[nt].union(
+                                    new_first[symbol] | {symbol})
+                                break
+                        elif isinstance(symbol, Terminal):
+                            break
+                    else:
+                        new_first[nt].add(EPSILON)
+
+            if new_first == first_nt:
+                break
+            first_nt = new_first
+
+        self.first_nt = first_nt
+
     def calculate_first(self):
         self.first.clear()
         first = {nt: set() for nt in self.non_terminals}
@@ -263,7 +303,8 @@ class ContextFreeGrammar:
         for nt in self.non_terminals:
             for production in self.production_rules[nt]:
                 first_symbol = production[0]
-                if isinstance(first_symbol, Terminal) or isinstance(first_symbol, Epsilon):
+                if (isinstance(first_symbol, Terminal) or
+                        isinstance(first_symbol, Epsilon)):
                     first[nt].add(first_symbol)
 
         while True:
@@ -275,10 +316,9 @@ class ContextFreeGrammar:
                         if isinstance(symbol, NonTerminal):
                             if EPSILON in new_first[symbol]:
                                 new_first[nt] = new_first[nt].union(
-                                    new_first[symbol] - set([EPSILON]))
+                                    new_first[symbol] - {EPSILON})
                             else:
-                                new_first[nt] = new_first[nt].union(
-                                    new_first[symbol])
+                                new_first[nt] |= new_first[symbol]
                                 break
                         elif isinstance(symbol, Terminal):
                             new_first[nt].add(symbol)
@@ -321,9 +361,10 @@ class ContextFreeGrammar:
 
                         # if B -> xAy is a production
                         #   FOLLOW(A) = FOLLOW(A) U FIRST(y) - {&}
-                        if (isinstance(symbol, NonTerminal) and isinstance(next_symbol, NonTerminal)):
-                            new_follow[symbol] = new_follow[symbol].union(
-                                self.first_of_string(production[i+1:]) - set([EPSILON]))
+                        if (isinstance(symbol, NonTerminal) and
+                                isinstance(next_symbol, NonTerminal)):
+                            new_follow[symbol] |= self.first_of_string(
+                                production[i+1:]) - {EPSILON}
 
                             # if B -> xAy is a production and & in FIRST(y)
                             #   FOLLOW(A) = FOLLOW(A) U FOLLOW(B)
