@@ -31,7 +31,6 @@ def test_first_02():
     a = Terminal('a')
     b = Terminal('b')
     c = Terminal('c')
-    d = Terminal('d')
     e = Terminal('e')
     epsilon = Epsilon('&')
 
@@ -101,7 +100,6 @@ def test_follow_02():
     a = Terminal('a')
     b = Terminal('b')
     c = Terminal('c')
-    d = Terminal('d')
     e = Terminal('e')
     eos = EoS('$')
 
@@ -122,3 +120,52 @@ def test_follow_02():
     }
 
     assert g.follow == expected_follow
+
+
+def test_first_nt_01():
+    S = NonTerminal('S')
+    A = NonTerminal('A')
+    B = NonTerminal('B')
+    C = NonTerminal('C')
+    epsilon = Epsilon('&')
+
+    string = '''S -> A B C
+                A -> a A | &
+                B -> b B | A C d
+                C -> c C | &'''
+
+    g = ContextFreeGrammar.from_string(string)
+
+    g.calculate_first_nt()
+
+    expected_first_nt = {
+        S: set([A, B, C]),
+        A: set([epsilon]),
+        B: set([A, C]),
+        C: set([epsilon]),
+    }
+
+    assert g.first_nt == expected_first_nt
+
+
+def test_first_nt_02():
+    S = NonTerminal('S')
+    A = NonTerminal('A')
+    B = NonTerminal('B')
+    epsilon = Epsilon('&')
+
+    string = '''S -> A b | A B c
+                B -> b B | A d | &
+                A -> a A | &'''
+
+    g = ContextFreeGrammar.from_string(string)
+
+    g.calculate_first_nt()
+
+    expected_first_nt = {
+        S: set([A, B]),
+        B: set([epsilon, A]),
+        A: set([epsilon]),
+    }
+
+    assert g.first_nt == expected_first_nt
