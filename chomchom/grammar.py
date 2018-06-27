@@ -166,6 +166,17 @@ class ContextFreeGrammar:
 
         return ns
 
+    def without_simple_productions(self) -> 'ContextFreeGrammar':
+        new_productions = []
+
+        for lhs, other_nts in self.simple_production_sets().items():
+            for other_nt in other_nts:
+                for rhs in self.production_rules[other_nt]:
+                    if len(rhs) > 1 or not isinstance(rhs[0], NonTerminal):
+                        new_productions.append(ProductionRule(lhs, rhs))
+
+        return ContextFreeGrammar(new_productions, self.start_symbol)
+
     def factor(self, max_steps):
         for _ in range(max_steps):
             if self.is_factored():
