@@ -1,4 +1,4 @@
-from typing import List, NamedTuple, Set, DefaultDict, Iterable
+from typing import List, NamedTuple, Dict, Set, DefaultDict, Iterable
 
 from itertools import combinations
 
@@ -92,41 +92,87 @@ class ContextFreeGrammar:
     def non_terminals(self):
         return self.production_rules.keys()
 
-    def list_nonfactoreds(self):
-        for nt, prods in self.production_rules.items():
+    def find_nondeterminisms(self):
+        for nt, prods in self.production_rules.copy().items():
             for a, b in combinations(prods, 2):
                 if self.first_of_string(a) & self.first_of_string(b):
                     yield (nt, a, b)
 
-    def is_factored(self):
-        if any(self.list_nonfactoreds()):
-            return False
-        return True
+    def is_factored(self) -> bool:
+        return not any(self.find_nondeterminisms())
 
-    def next_nonterminal_name(self, nonterminal):
-        if nonterminal not in self.non_terminals:
-            return nonterminal
-
-        base = str(nonterminal)
-
+    def next_nonterminal_name(self, nt: NonTerminal) -> NonTerminal:
         n = 1
-        while NonTerminal(base + f'{n}') in self.non_terminals:
+        while NonTerminal(f'{nt}{n}') in self.non_terminals:
             n += 1
 
-        return NonTerminal(base + f'{n}')
+        return NonTerminal(f'{nt}{n}')
 
-    def factor(self, n):
-        i = 0
-        current_grammar = self
-        while i < n:
-            if current_grammar.is_factored():
+    def derivations(self, sentence: List[Symbol]):
+        for i, symbol in enumerate(sentence):
+            if isinstance(symbol, NonTerminal):
+
+                for prod in self.production_rules[symbol]:
+                    derivation = [
+                        *sentence[:i],
+                        *[s for s in prod if s != Epsilon('&')],
+                        *sentence[i+1:]
+                    ]
+                    yield derivation or Epsilon('&')
+
+    def remove_direct_non_determinism(
+        self,
+        nt: NonTerminal,
+        a: List[Symbol],
+        b: List[Symbol],
+    ):
+        common = a[0]
+        assert common == b[0]
+
+        self.production_rules[nt].remove(a)
+        self.production_rules[nt].remove(b)
+
+        new_nt = self.next_nonterminal_name(nt)
+
+        self.production_rules[nt].append([common, new_nt])
+        self.production_rules[new_nt].append(a[1:])
+        self.production_rules[new_nt].append(b[1:])
+
+    def remove_indirect_non_determinism(
+        self,
+        nt: NonTerminal,
+        a: List[Symbol],
+        b: List[Symbol],
+    ):
+        ...
+
+    def simple_production_sets(self) -> Dict[NonTerminal, Set[NonTerminal]]:
+        ns = {nt: {nt} for nt in self.production_rules}
+
+        for lhs, productions in self.production_rules.items():
+            for rhs in productions:
+                if len(rhs) == 1 and isinstance(rhs[0], NonTerminal):
+                    for nt in ns[rhs[0]]:
+                        ns[lhs].add(nt)
+
+                        for other_nt, other_set in ns.items():
+                            if lhs in other_set:
+                                other_set.add(nt)
+
+        return ns
+
+    def factor(self, max_steps):
+        for _ in range(max_steps):
+            if self.is_factored():
                 return True
-            i += 1
 
-            # TODO
-            # current_grammar = new_grammar
+            for nt, a, b in self.find_nondeterminisms():
+                if a[0] == b[0]:
+                    self.remove_direct_non_determinism(nt, a, b)
+                else:
+                    self.remove_indirect_non_determinism(nt, a, b)
 
-        return current_grammar.is_factored()
+        return self.is_factored()
 
     def remove_unreachable(self):
         # Reachable symbols
