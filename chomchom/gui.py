@@ -49,8 +49,11 @@ class MainWindow(qtw.QMainWindow):
 
     def factored_in(self):
         index = self.combo_grammar.currentIndex()-1
+        steps = self.dial_steps.value()
 
-        ...
+        answer = self.ctrl.factored_in(index, steps)
+
+        self.factorable_result.setText(answer)
 
     def show_grammar(self):
         index = self.combo_grammar.currentIndex()
@@ -62,12 +65,17 @@ class MainWindow(qtw.QMainWindow):
             self.btn_grammar_info.setEnabled(False)
             self.btn_remove_lr.setEnabled(False)
             self.btn_to_proper.setEnabled(False)
+            self.dial_steps.setEnabled(False)
             return
+
+        self.factored_in()
 
         self.btn_add_grammar.setEnabled(False)
 
         self.btn_grammar_info.setEnabled(True)
         self.btn_remove_lr.setEnabled(True)
         self.btn_to_proper.setEnabled(True)
+        self.dial_steps.setEnabled(True)
+
         grammar_as_string = str(self.ctrl.grammars[index-1])
         self.input.setPlainText(grammar_as_string)

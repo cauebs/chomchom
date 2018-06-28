@@ -7,10 +7,10 @@ def powerset(iterable):
                                for r in range(0, len(s)+1))
 
 
-def format_first(grammar) -> str:
+def format_dict(dict, prefix) -> str:
     return '\n'.join(
-        f"first({str(nt)}) = {{{', '.join(str(f) for f in firsts)}}}"
-        for nt, firsts in grammar.first.items()
+        f"{prefix}({str(nt)}) = {{{', '.join(str(f) for f in firsts)}}}"
+        for nt, firsts in dict.items()
     )
 
 

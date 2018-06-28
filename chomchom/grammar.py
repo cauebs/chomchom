@@ -218,11 +218,9 @@ class ContextFreeGrammar:
                     idxs = [i
                             for i, x in enumerate(rhs)
                             if x in ne]
-                    print(f'idxs={idxs}')
                     for subset in powerset(idxs):
                         if not subset:
                             continue
-                        print(subset)
                         new_rhs = [s
                                    for i, s in enumerate(rhs)
                                    if i not in subset]
@@ -257,9 +255,12 @@ class ContextFreeGrammar:
                 break
             reachable = new_reachable
 
-        new_productions = [ProductionRule(lhs, *rhs)
-                           for lhs, rhs in self.production_rules.items()
-                           if lhs in reachable]
+            new_productions = [
+                ProductionRule(lhs, rhs)
+                for lhs, prods in self.production_rules.items()
+                for rhs in prods
+                if lhs in reachable
+            ]
 
         return ContextFreeGrammar(new_productions, self.start_symbol), reachable
 
@@ -421,8 +422,8 @@ class ContextFreeGrammar:
                         #   FOLLOW(A) = FOLLOW(A) U FIRST(y) - {&}
                         if (isinstance(symbol, NonTerminal) and
                                 isinstance(next_symbol, NonTerminal)):
-                            new_follow[symbol] |= self.first_of_string(
-                                production[i+1:]) - {EPSILON}
+                            new_follow[symbol] = new_follow[symbol].union(self.first_of_string(
+                                production[i+1:]) - {EPSILON})
 
                             # if B -> xAy is a production and & in FIRST(y)
                             #   FOLLOW(A) = FOLLOW(A) U FOLLOW(B)
