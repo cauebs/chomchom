@@ -35,6 +35,12 @@ class Symbol:
 
         return self.value == other.value
 
+    def __lt__(self, other) -> bool:
+        if not isinstance(other, Symbol):
+            raise NotImplemented
+
+        return self.value < other.value
+
 
 class NonTerminal(Symbol):
     REGEX = re.compile(r'^([A-Z]\d*)$')
