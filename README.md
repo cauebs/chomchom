@@ -4,7 +4,7 @@
 1. Verificar se L(G) é vazia, finita ou infinita
     - Vazia: Inicial não é fértil
     - Finita: A partir de um não terminal, não é possível voltar a ele
-1. GLC -> GLC Própria
+2. GLC -> GLC Própria
     1. Transformar em &-livre
     2. Remover ciclos (Produções simples)
     3. Remover Símbolos inúteis

@@ -35,6 +35,7 @@ class ContextFreeGrammar:
         self.first_nt = DefaultDict[Symbol, Set[Symbol]](set)
         self.follow = DefaultDict[Symbol, Set[Symbol]](set)
         self.calculate_follow()
+        self.calculate_first_nt()
 
     def copy(self) -> 'ContextFreeGrammar':
         return deepcopy(self)
@@ -120,6 +121,9 @@ class ContextFreeGrammar:
 
         return NonTerminal(base + f'{n}')
 
+    def is_infinite(self):
+        return True
+
     def factor(self, n):
         i = 0
         current_grammar = self
@@ -133,7 +137,7 @@ class ContextFreeGrammar:
 
         return current_grammar.is_factored()
 
-    def to_epsilon_free(self) -> 'ContextFreeGrammar':
+    def to_epsilon_free(self):
         ne: Set['NonTerminal'] = {nt for nt in self.non_terminals if [
             EPSILON] in self.production_rules[nt]}
 
@@ -178,11 +182,11 @@ class ContextFreeGrammar:
             new_productions += [ProductionRule(new_start, rhs)
                                 for rhs in prods]
 
-            return ContextFreeGrammar(new_productions, new_start)
+            return ContextFreeGrammar(new_productions, new_start), ne
 
-        return ContextFreeGrammar(new_productions, self.start_symbol)
+        return ContextFreeGrammar(new_productions, self.start_symbol), ne
 
-    def remove_unreachable(self) -> 'ContextFreeGrammar':
+    def remove_unreachable(self):
         # Reachable symbols
         reachable: Set['Symbol'] = {self.start_symbol}
 
@@ -203,12 +207,12 @@ class ContextFreeGrammar:
                            for lhs, rhs in self.production_rules.items()
                            if lhs in reachable]
 
-        return ContextFreeGrammar(new_productions, self.start_symbol)
+        return ContextFreeGrammar(new_productions, self.start_symbol), reachable
 
     def remove_useless(self) -> 'ContextFreeGrammar':
         return self.remove_infertile().remove_unreachable()
 
-    def remove_infertile(self) -> 'ContextFreeGrammar':
+    def remove_infertile(self):
         if self.is_empty():
             s = NonTerminal('S')
             return ContextFreeGrammar([ProductionRule(s, [s])], s)
@@ -221,7 +225,7 @@ class ContextFreeGrammar:
                 if set(prod).issubset(fertile | self.terminals | {EPSILON}):
                     new_productions.append(ProductionRule(lhs, prod))
 
-        return ContextFreeGrammar(new_productions, self.start_symbol)
+        return ContextFreeGrammar(new_productions, self.start_symbol), fertile
 
     def fertile(self) -> Set['NonTerminal']:
         fertile: Set['NonTerminal'] = set()
